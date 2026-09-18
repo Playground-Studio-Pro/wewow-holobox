@@ -1,0 +1,457 @@
+/*
+  WEWOW VISUAL SPEC — FINAL.
+
+  HOLOBOX MASTER CANVAS — portrait 9:16 (ver ENGINE_SPEC.md). Todo se diseña
+  y escala relativo al canvas 9:16 (.holobox-canvas), NO al viewport del
+  navegador — por eso las medidas internas usan container query units
+  (cqw/cqh) en vez de vw/vh/rem sueltos. Esto permite escalar
+  proporcionalmente en cualquier ventana/resolución sin jamás reorganizar el
+  layout (sin breakpoints).
+
+  Material glass = CSS (este archivo). Coreografía = Motion (screens/*.tsx,
+  layout/PersonPresence.tsx).
+
+  Referencia técnica usada ÚNICAMENTE por sus principios de material/motion
+  (NUNCA su dirección estética vaporwave/retro, que se ignora por completo):
+  frosted translucent material, layered transparency, subtle borders,
+  content visible behind glass, material hierarchy, immediate touch
+  feedback, smooth reveal timing, 60fps performance (backdrop-filter
+  acotado a cada objeto glass, nunca fullscreen).
+
+  Constraints propios con prioridad sobre cualquier referencia:
+  - sin background diseñado, sin paneles negros (TRANSPARENT COMPOSITING)
+  - CERO :hover / cursor interaction (TOUCH-FIRST / TOUCH-ONLY)
+  - SOLO blanco frosted + amarillo WeWow como acento — NO blue, NO otros
+*/
+
+/* ---------- Stage — fullscreen 9:16 real, letterbox SOLO en development
+   cuando el viewport no es exactamente 9:16 (ver ENGINE_SPEC.md). Usamos
+   dvw/dvh (dynamic viewport) en vez de vw/vh para que coincida exactamente
+   con el área real disponible incluso con browser chrome dinámico — en el
+   display físico del Holobox (kiosk, sin chrome) dvw/dvh == 100% real. */
+
+.holobox-viewport {
+  width: 100dvw;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* mismo negro base que el canvas — no es un fondo nuevo, sigue siendo
+     ausencia/transparencia (TRANSPARENT COMPOSITING PRINCIPLE) */
+  background: #000;
+}
+
+.holobox-canvas {
+  position: relative;
+  aspect-ratio: 9 / 16;
+  /* Cuando el viewport YA es 9:16 (el Holobox físico en producción), esta
+     fórmula converge exactamente a 100dvw × 100dvh — fullscreen real, sin
+     letterbox. Cuando el viewport tiene otra proporción (desarrollo), el
+     canvas se escala proporcionalmente y se centra (letterbox), SIN
+     reorganizar el layout interno (sin breakpoints). */
+  width: min(100dvw, calc(100dvh * 9 / 16));
+  max-height: 100dvh;
+  overflow: hidden;
+  container-type: size;
+  container-name: holobox;
+  /* safe areas consistentes entre S0/S1/S2 */
+  --safe-x: 4.5cqw;
+  --safe-y: 3cqh;
+}
+
+/* persona/video — capa ÚNICA y persistente detrás de S1/S2 (ver
+   src/layout/PersonPresence.tsx). Nunca se desmonta entre estados, por eso
+   la entrada es continua: solo cambian blur/opacity/contrast, nunca un
+   corte — Carlos ya está físicamente detrás del vidrio; solo lo revelamos. */
+.person-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* El master video del cliente es source of truth — nunca se recorta ni
+     se reencuadra. object-fit: contain garantiza el frame completo incluso
+     si algún archivo futuro no fuera exactamente 9:16 (los 7 actuales sí lo
+     son, así que hoy esto no introduce ningún letterbox). */
+  object-fit: contain;
+  z-index: 0;
+}
+
+/* ---------- Ambient particles (sistema preparado, ver AmbientParticles.tsx
+   — apagado por defecto). Suspendidas dentro del volumen transparente,
+   DETRÁS de las glass cards (mismo z-index que person-video), nunca un
+   fondo fullscreen con color propio. */
+
+.ambient-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ambient-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(247, 183, 51, 0.55);
+  box-shadow: 0 0 4px rgba(247, 183, 51, 0.4);
+  animation-name: ambient-particle-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes ambient-particle-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(calc(-1 * var(--particle-drift, 14px)));
+  }
+}
+
+.screen {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ---------- S0 ---------- */
+
+.screen-s0 {
+  gap: 3cqh;
+  cursor: pointer;
+  position: relative;
+}
+
+.s0-logo-wrap {
+  position: relative;
+  width: 55cqw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.s0-logo-halo {
+  position: absolute;
+  width: 220%;
+  height: 220%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(247, 183, 51, 0.22), transparent 70%);
+  filter: blur(1.2cqw);
+  pointer-events: none;
+}
+
+.s0-logo {
+  position: relative;
+  width: 100%;
+  height: auto;
+}
+
+.s0-hint {
+  margin: 0;
+  font-size: 2.3cqw;
+  letter-spacing: 0.28em;
+  font-weight: 300;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ---------- S1 — tech glass grid (TASK 007) ---------- */
+
+.screen-s1 {
+  justify-content: space-between;
+  padding: 2.2cqh var(--safe-x) 1.7cqh;
+  gap: 1.3cqh;
+}
+
+.s1-header {
+  text-align: center;
+  max-width: 90cqw;
+  text-shadow: 0 0.4cqh 2.2cqw rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5cqh;
+  transform: scale(var(--header-scale, 1));
+  transform-origin: top center;
+  margin-bottom: var(--header-spacing-extra, 0px);
+}
+
+.s1-logo {
+  width: 14cqw;
+  max-width: 64px;
+  height: auto;
+  margin-bottom: 0.2cqh;
+}
+
+.s1-header h1 {
+  margin: 0;
+  font-size: clamp(1.05rem, 5cqw, 1.5rem);
+  font-weight: 400;
+  letter-spacing: 0.3em;
+}
+
+.s1-header p {
+  margin: 0;
+  max-width: 78cqw;
+  font-size: clamp(0.64rem, 2.5cqw, 0.8rem);
+  font-weight: 400;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+/* tech glass grid — dos columnas; la última unidad (07) ocupa ambas
+   columnas y se centra a un ancho equivalente a una sola columna, vía la
+   misma custom property que define el gap (--s1-gap-x), para que su
+   tamaño coincida exactamente con el de las demás cards. */
+.s1-grid {
+  --s1-gap-x: calc(3.4cqw * var(--card-gap-x, 1));
+  width: 100%;
+  max-width: calc(100% * var(--grid-width, 1));
+  margin-inline: auto;
+  margin-top: var(--menu-offset-y, 0px);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: var(--s1-gap-x);
+  row-gap: calc(1cqh * var(--card-gap-y, 1));
+}
+
+.s1-grid-item {
+  width: 100%;
+  transform: scale(var(--card-scale, 1));
+}
+
+.s1-grid-item--last {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+}
+
+.s1-grid-item--last .glass-unit {
+  width: calc((100% - var(--s1-gap-x)) / 2);
+}
+
+/* glass card — pieza de optical glass suspendida, no un botón HTML
+   translúcido: gradiente de superficie (no un tono plano) + backdrop-filter
+   acotado a la card (nunca fullscreen, principio de performance) + borde
+   fino translúcido + highlights ópticos (línea larga sutil + sector corto
+   más brillante) + edge inferior (refracción) + sombra difusa en capas
+   para dar sensación real de espesor del vidrio. Touch target físico
+   grande — no una cápsula/pill. */
+.glass-unit {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 8cqh;
+  font: inherit;
+  color: #fff;
+  text-align: left;
+  background: linear-gradient(
+    160deg,
+    rgb(255 255 255 / calc(0.13 * var(--glass-opacity, 1))) 0%,
+    rgb(255 255 255 / calc(0.045 * var(--glass-opacity, 1))) 50%,
+    rgb(255 255 255 / calc(0.08 * var(--glass-opacity, 1))) 100%
+  );
+  backdrop-filter: blur(calc(2.8cqw * var(--glass-blur, 1))) saturate(1.15);
+  -webkit-backdrop-filter: blur(calc(2.8cqw * var(--glass-blur, 1))) saturate(1.15);
+  border: 1px solid rgb(255 255 255 / calc(0.18 * var(--glass-border-opacity, 1)));
+  border-radius: calc(3.6cqw * var(--card-radius, 1));
+  padding: calc(1.3cqh * var(--card-padding, 1)) calc(3.2cqw * var(--card-padding, 1))
+    calc(1.1cqh * var(--card-padding, 1));
+  cursor: pointer;
+  box-shadow:
+    0 1.6cqh 4cqw rgb(0 0 0 / calc(0.32 * var(--glass-shadow, 1))),
+    0 0.25cqh 0.7cqw rgb(0 0 0 / calc(0.2 * var(--glass-shadow, 1))),
+    inset 0 1px 0 rgb(255 255 255 / calc(0.2 * var(--glass-highlight, 1))),
+    inset 0 -1.5px 0 rgb(0 0 0 / calc(0.14 * var(--glass-shadow, 1)));
+}
+
+.glass-unit:disabled {
+  cursor: default;
+}
+
+/* highlight óptico largo y sutil — luz distribuida a lo largo del borde
+   superior del vidrio */
+.glass-unit-highlight {
+  position: absolute;
+  top: 0;
+  left: 6%;
+  right: 6%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / calc(0.55 * var(--glass-highlight, 1))),
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* sector corto y más brillante — simula un punto de reflexión óptica real,
+   no una línea continua uniforme */
+.glass-unit-highlight-hot {
+  position: absolute;
+  top: 0;
+  left: 8%;
+  width: 16%;
+  height: 1.5px;
+  background: rgb(255 255 255 / calc(0.85 * var(--glass-highlight, 1)));
+  filter: blur(0.5px);
+  pointer-events: none;
+}
+
+/* edge inferior — refracción sutil que da sensación de grosor real del
+   vidrio (no solo un borde plano) */
+.glass-unit-edge {
+  position: absolute;
+  bottom: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / calc(0.12 * var(--glass-highlight, 1))),
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* luz amarilla detrás del vidrio — nunca un relleno sólido; siempre hay un
+   rastro tenue (0.12) para que el glass no se sienta plano/muerto en reposo,
+   y sube a 1 (energía completa) solo con el touch — el target exacto de
+   opacity al seleccionar/tocar lo controla S1Menu.tsx (selectedGlowIntensity
+   / touchGlowIntensity), este --yellow-glow solo escala el brillo base. */
+.glass-unit-glow {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(
+    ellipse at 20% 15%,
+    rgb(247 183 51 / calc(0.5 * var(--yellow-glow, 1))),
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.glass-unit-top {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.glass-unit-index {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6cqh;
+}
+
+.glass-unit-number {
+  font-size: clamp(0.7rem, 2.6cqw, 0.9rem);
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* pequeña línea amarilla — energía de marca contenida, nunca un bloque */
+.glass-unit-accent {
+  width: 3.4cqw;
+  height: 2px;
+  border-radius: 1px;
+  background: rgb(247 183 51 / var(--yellow-accent-opacity, 1));
+  box-shadow: 0 0 0.6cqw rgb(247 183 51 / calc(0.6 * var(--yellow-glow, 1)));
+}
+
+/* slot reservado para icono glass por unidad — placeholder estructural
+   hasta que existan assets definitivos (ver types.ts → iconSrc). Tamaño
+   fijo (no cqw): es chrome de UI pequeño, no debe crecer con el ancho del
+   canvas al mismo ritmo que el contenido principal. */
+.glass-unit-icon-slot {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / calc(0.16 * var(--glass-border-opacity, 1)));
+  background: rgb(255 255 255 / calc(0.04 * var(--glass-opacity, 1)));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transform: scale(var(--icon-scale, 1));
+}
+
+.glass-unit-icon-placeholder {
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / calc(0.3 * var(--glass-border-opacity, 1)));
+}
+
+.glass-unit-icon-img {
+  width: 62%;
+  height: 62%;
+  object-fit: contain;
+}
+
+.unit-label {
+  position: relative;
+  display: block;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  line-height: 1.12;
+  font-size: clamp(0.76rem, 3cqw, 0.98rem);
+}
+
+/* indicador circular de touch/navegación — esquina inferior derecha.
+   Tamaño fijo, igual criterio que el icon-slot. */
+.glass-unit-nav {
+  position: relative;
+  align-self: flex-end;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / calc(0.22 * var(--glass-border-opacity, 1)));
+  background: rgb(255 255 255 / calc(0.05 * var(--glass-opacity, 1)));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22%;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 0.6cqh;
+  transform: scale(var(--nav-scale, 1));
+}
+
+.s1-footer-hint {
+  margin: 0;
+  margin-top: var(--footer-offset-y, 0px);
+  font-size: clamp(0.6rem, 2.3cqw, 0.75rem);
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ---------- Transition (T_UNIT_ENTER / T_RETURN placeholder) ---------- */
+
+.screen-transition {
+  background: transparent;
+}
+
+/* ---------- S2 ----------
+   S2 = video/person experience puro (ver ENGINE_SPEC.md). No hay estilos
+   propios: App.tsx no renderiza ningún componente para S2_PERSON —
+   PersonPresence (siempre montado) ya muestra el video en CLEAR sobre el
+   canal transparente. Sin identity card, sin botón de regreso, sin CSS
+   dedicado. */

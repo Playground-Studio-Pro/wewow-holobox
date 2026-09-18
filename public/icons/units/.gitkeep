@@ -1,0 +1,3 @@
+Ubicación prevista para los iconos glass de cada unidad de negocio (PNG/WebP
+transparente), referenciados vía BusinessUnit.iconSrc. Vacío intencionalmente
+— los assets definitivos se agregarán después (ver TASK 007, ENGINE_TASKS.md).

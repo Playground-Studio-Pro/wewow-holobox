@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WeWow Holobox — B: Digital Sculpture</title>
+<style>
+  :root {
+    --bg: #050507;
+    --accent: #f5a623;
+    --accent-soft: rgba(245, 166, 35, 0.35);
+    --text: #f6f5f2;
+    --text-dim: rgba(246, 245, 242, 0.55);
+    --glass-fill: rgba(255, 255, 255, 0.045);
+    --glass-fill-strong: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.14);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #000;
+    font-family: -apple-system, "SF Pro Display", "Segoe UI", Roboto, system-ui, sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .review-label {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    z-index: 50;
+  }
+  .review-label b { color: var(--accent); }
+
+  .holobox-frame {
+    position: relative;
+    width: min(46vh, 92vw);
+    aspect-ratio: 9 / 16;
+    max-height: 94vh;
+    border-radius: 28px;
+    padding: 10px;
+    background: linear-gradient(160deg, #131316, #08080a 60%);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 40px 120px rgba(0,0,0,0.7),
+      inset 0 0 40px rgba(0,0,0,0.6);
+  }
+
+  .holobox-screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--bg);
+    isolation: isolate;
+  }
+
+  /* central sculptural light column */
+  .light-column {
+    position: absolute;
+    top: -10%;
+    left: 50%;
+    width: 2px;
+    height: 120%;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, transparent, rgba(245,166,35,0.5) 35%, rgba(245,166,35,0.15) 60%, transparent);
+    filter: blur(1px);
+    opacity: 0.55;
+    animation: column-pulse 5s ease-in-out infinite;
+  }
+  @keyframes column-pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.65; }
+  }
+
+  .ambient-glow {
+    position: absolute;
+    inset: -20%;
+    background: radial-gradient(closest-side, rgba(245,166,35,0.05), transparent 60%) 50% 40% / 90% 60% no-repeat;
+    pointer-events: none;
+    transition: transform 0.4s ease-out;
+  }
+
+  /* ---------- S0 ---------- */
+  .s0 {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    cursor: pointer;
+    transition: opacity 0.6s ease, filter 0.6s ease;
+    z-index: 5;
+  }
+
+  .s0-logo-wrap {
+    position: relative;
+    width: 56%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .s0-logo-halo {
+    position: absolute;
+    width: 200%;
+    height: 260%;
+    background: radial-gradient(closest-side, rgba(245,166,35,0.16), transparent 60%);
+    filter: blur(4px);
+    animation: breathe 6.5s ease-in-out infinite;
+  }
+  .s0-logo-wrap img {
+    position: relative;
+    width: 100%;
+    filter: drop-shadow(0 10px 40px rgba(245,166,35,0.18));
+    animation: float-slow 9s ease-in-out infinite;
+  }
+  .s0-hint {
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    animation: hint-pulse 3.2s ease-in-out infinite;
+  }
+  @keyframes breathe { 0%,100% { opacity:.55; transform:scale(.92); } 50% { opacity:1; transform:scale(1.04); } }
+  @keyframes float-slow { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes hint-pulse { 0%,100% { opacity:.25; } 50% { opacity:.75; } }
+
+  /* ---------- S1 ---------- */
+  .s1 { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .7s ease; }
+  .s1.active { opacity: 1; pointer-events: auto; }
+
+  .s1-header {
+    position: absolute;
+    top: 6%;
+    left: 0; right: 0;
+    text-align: center;
+    padding: 0 8%;
+    z-index: 4;
+  }
+  .s1-title {
+    font-size: clamp(20px, 4.4vh, 30px);
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    margin: 0 0 10px;
+  }
+  .s1-subtitle {
+    font-size: clamp(11px, 1.7vh, 13px);
+    line-height: 1.5;
+    color: var(--text-dim);
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .sculpture { position: absolute; inset: 0; }
+
+  .unit {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 12px 8px;
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-border);
+    clip-path: polygon(12% 0%, 100% 0%, 88% 100%, 0% 100%);
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.18s ease, box-shadow 0.25s ease, filter 0.3s ease, opacity 0.3s ease;
+    box-shadow: 0 16px 34px rgba(0,0,0,0.45);
+    animation: orbit-drift 8s ease-in-out infinite;
+  }
+
+  .unit .unit-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+  .unit .unit-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.55;
+    margin-bottom: 7px;
+    box-shadow: 0 0 8px var(--accent-soft);
+  }
+
+  .unit.primary {
+    background: var(--glass-fill-strong);
+    border-color: rgba(245,166,35,0.4);
+    z-index: 3;
+  }
+  .unit.primary .unit-name { font-size: 13.5px; }
+  .unit.primary .unit-dot { opacity: 1; }
+
+  .unit:active, .unit.pressed {
+    transform: scale(0.9) !important;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-soft), 0 0 34px rgba(245,166,35,0.4);
+  }
+  .unit.selected-preview .unit-name { color: var(--accent); }
+
+  @keyframes orbit-drift {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -6px; }
+  }
+
+  /* ascending spiral around the light column — depth via scale + blur, not a grid */
+  #u1 { width: 30%; height: 13%; top: 46%; left: 35%; z-index: 3; animation-delay: 0s; }
+  #u2 { width: 26%; height: 11%; top: 66%; left: 8%;  z-index: 2; filter: blur(0.2px); animation-delay: .5s; }
+  #u3 { width: 24%; height: 10%; top: 60%; left: 66%; z-index: 2; filter: blur(0.2px); animation-delay: 1s; }
+  #u4 { width: 21%; height: 9%;  top: 36%; left: 12%; z-index: 2; transform: scale(0.92); filter: blur(0.4px); animation-delay: 1.5s; }
+  #u5 { width: 21%; height: 9%;  top: 33%; left: 66%; z-index: 2; transform: scale(0.9);  filter: blur(0.4px); animation-delay: 2s; }
+  #u6 { width: 18%; height: 8%;  top: 22%; left: 18%; z-index: 1; transform: scale(0.8);  filter: blur(0.6px); opacity: 0.85; animation-delay: 2.5s; }
+  #u7 { width: 18%; height: 8%;  top: 21%; left: 62%; z-index: 1; transform: scale(0.8);  filter: blur(0.6px); opacity: 0.85; animation-delay: 3s; }
+
+  .back-hint {
+    position: absolute; bottom: 4%; left: 0; right: 0; text-align: center;
+    font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.25);
+    z-index: 4;
+  }
+</style>
+</head>
+<body>
+  <div class="review-label">Variación <b>B</b> — Digital Sculpture · S0/S1 exploration</div>
+
+  <div class="holobox-frame">
+    <div class="holobox-screen" id="screen">
+      <div class="light-column"></div>
+      <div class="ambient-glow" id="glow"></div>
+
+      <div class="s0" id="s0">
+        <div class="s0-logo-wrap">
+          <div class="s0-logo-halo"></div>
+          <img src="/branding/wewow-logo.png" alt="WeWow" />
+        </div>
+        <div class="s0-hint">Toca para comenzar</div>
+      </div>
+
+      <div class="s1" id="s1">
+        <div class="s1-header">
+          <h1 class="s1-title">BIENVENIDOS</h1>
+          <p class="s1-subtitle">Conoce a las unidades de negocio que forman parte de nuestra organización.</p>
+        </div>
+        <div class="sculpture">
+          <div class="unit primary" id="u1"><span class="unit-dot"></span><span class="unit-name">WeWow At Work!</span></div>
+          <div class="unit" id="u2"><span class="unit-dot"></span><span class="unit-name">Unidad 02</span></div>
+          <div class="unit" id="u3"><span class="unit-dot"></span><span class="unit-name">Unidad 03</span></div>
+          <div class="unit" id="u4"><span class="unit-dot"></span><span class="unit-name">Unidad 04</span></div>
+          <div class="unit" id="u5"><span class="unit-dot"></span><span class="unit-name">Unidad 05</span></div>
+          <div class="unit" id="u6"><span class="unit-dot"></span><span class="unit-name">Unidad 06</span></div>
+          <div class="unit" id="u7"><span class="unit-dot"></span><span class="unit-name">Unidad 07</span></div>
+        </div>
+        <div class="back-hint">Toca una unidad para explorar</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const screen = document.getElementById('screen');
+  const s0 = document.getElementById('s0');
+  const s1 = document.getElementById('s1');
+  const glow = document.getElementById('glow');
+
+  s0.addEventListener('click', () => {
+    s0.style.opacity = '0';
+    s0.style.filter = 'blur(6px)';
+    s0.style.pointerEvents = 'none';
+    s1.classList.add('active');
+  });
+
+  screen.addEventListener('mousemove', (e) => {
+    const r = screen.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    glow.style.transform = `translate(${x * -16}px, ${y * -16}px)`;
+    document.querySelectorAll('.unit').forEach((el, i) => {
+      const depth = (i % 3) + 1;
+      el.style.marginLeft = `${x * depth * 5}px`;
+      el.style.marginTop = `${y * depth * 5}px`;
+    });
+  });
+
+  document.querySelectorAll('.unit').forEach((el) => {
+    el.addEventListener('pointerdown', () => {
+      el.classList.add('pressed', 'selected-preview');
+      document.querySelectorAll('.unit').forEach((other) => {
+        if (other !== el) other.style.opacity = '0.3';
+      });
+    });
+    el.addEventListener('pointerup', () => {
+      setTimeout(() => {
+        el.classList.remove('pressed', 'selected-preview');
+        document.querySelectorAll('.unit').forEach((other) => { other.style.opacity = ''; });
+      }, 260);
+    });
+  });
+
+  screen.addEventListener('dblclick', () => {
+    s1.classList.remove('active');
+    s0.style.opacity = '1';
+    s0.style.filter = 'none';
+    s0.style.pointerEvents = 'auto';
+  });
+</script>
+</body>
+</html>

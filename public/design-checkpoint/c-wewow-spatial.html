@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WeWow Holobox — C: WeWow Spatial</title>
+<style>
+  :root {
+    --bg: #050507;
+    --accent: #f5a623;
+    --accent-soft: rgba(245, 166, 35, 0.35);
+    --text: #f6f5f2;
+    --text-dim: rgba(246, 245, 242, 0.55);
+    --glass-fill: rgba(255, 255, 255, 0.05);
+    --glass-fill-strong: rgba(255, 255, 255, 0.085);
+    --glass-border: rgba(255, 255, 255, 0.15);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #000;
+    font-family: -apple-system, "SF Pro Display", "Segoe UI", Roboto, system-ui, sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .review-label {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    z-index: 50;
+  }
+  .review-label b { color: var(--accent); }
+
+  .holobox-frame {
+    position: relative;
+    width: min(46vh, 92vw);
+    aspect-ratio: 9 / 16;
+    max-height: 94vh;
+    border-radius: 28px;
+    padding: 10px;
+    background: linear-gradient(160deg, #131316, #08080a 60%);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 40px 120px rgba(0,0,0,0.7),
+      inset 0 0 40px rgba(0,0,0,0.6);
+  }
+
+  .holobox-screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--bg);
+    isolation: isolate;
+  }
+
+  .ambient-glow {
+    position: absolute;
+    inset: -20%;
+    background: radial-gradient(closest-side, rgba(245,166,35,0.06), transparent 65%) 55% 35% / 80% 55% no-repeat;
+    pointer-events: none;
+    transition: transform 0.4s ease-out;
+  }
+
+  .wave-path {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    opacity: 0.5;
+  }
+
+  /* ---------- S0 ---------- */
+  .s0 {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    cursor: pointer;
+    transition: opacity 0.6s ease, filter 0.6s ease;
+    z-index: 5;
+  }
+  .s0-logo-wrap {
+    position: relative;
+    width: 58%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .s0-logo-halo {
+    position: absolute;
+    width: 220%;
+    height: 220%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(245,166,35,0.2), transparent 65%);
+    filter: blur(6px);
+    animation: breathe 5.5s ease-in-out infinite;
+  }
+  .s0-logo-wrap img {
+    position: relative;
+    width: 100%;
+    filter: drop-shadow(0 0 44px rgba(245,166,35,0.2));
+    animation: float-slow 7.5s ease-in-out infinite;
+  }
+  .s0-hint {
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    animation: hint-pulse 3.2s ease-in-out infinite;
+  }
+  @keyframes breathe { 0%,100% { opacity:.65; transform:scale(.95); } 50% { opacity:1; transform:scale(1.06); } }
+  @keyframes float-slow { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes hint-pulse { 0%,100% { opacity:.25; } 50% { opacity:.75; } }
+
+  /* ---------- S1 ---------- */
+  .s1 { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .7s ease; }
+  .s1.active { opacity: 1; pointer-events: auto; }
+
+  .s1-header {
+    position: absolute;
+    top: 6%;
+    left: 0; right: 0;
+    text-align: center;
+    padding: 0 8%;
+    z-index: 4;
+  }
+  .s1-title {
+    font-size: clamp(20px, 4.4vh, 30px);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    margin: 0 0 10px;
+  }
+  .s1-subtitle {
+    font-size: clamp(11px, 1.7vh, 13px);
+    line-height: 1.5;
+    color: var(--text-dim);
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .wave { position: absolute; inset: 0; z-index: 2; }
+
+  .unit {
+    position: absolute;
+    width: 46%;
+    height: 8.5%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 14px;
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.18s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+    animation: drift 7.5s ease-in-out infinite;
+  }
+
+  .unit .unit-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .unit .unit-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.6;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px var(--accent-soft);
+  }
+
+  .unit.primary {
+    background: var(--glass-fill-strong);
+    border-color: rgba(245,166,35,0.45);
+  }
+  .unit.primary .unit-name { font-size: 12.5px; }
+  .unit.primary .unit-dot { opacity: 1; }
+
+  .unit:active, .unit.pressed {
+    transform: scale(0.93) !important;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-soft), 0 0 28px rgba(245,166,35,0.4);
+  }
+  .unit.selected-preview .unit-name { color: var(--accent); }
+
+  @keyframes drift {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -5px; }
+  }
+
+  /* gentle S-curve across the vertical frame — structured but not a grid */
+  #u1 { top: 23%; left: 27%; animation-delay: 0s; }
+  #u2 { top: 33%; left: 4%;  animation-delay: .5s; }
+  #u3 { top: 43%; left: 50%; animation-delay: 1s; }
+  #u4 { top: 53%; left: 4%;  animation-delay: 1.5s; }
+  #u5 { top: 63%; left: 48%; animation-delay: 2s; }
+  #u6 { top: 73%; left: 6%;  animation-delay: 2.5s; }
+  #u7 { top: 83%; left: 44%; animation-delay: 3s; }
+
+  .back-hint {
+    position: absolute; bottom: 3%; left: 0; right: 0; text-align: center;
+    font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.25);
+    z-index: 4;
+  }
+</style>
+</head>
+<body>
+  <div class="review-label">Variación <b>C</b> — WeWow Spatial · S0/S1 exploration</div>
+
+  <div class="holobox-frame">
+    <div class="holobox-screen" id="screen">
+      <div class="ambient-glow" id="glow"></div>
+
+      <svg class="wave-path" viewBox="0 0 100 178" preserveAspectRatio="none" id="s1wave" style="display:none">
+        <path d="M 40 32 C 20 40, 65 50, 65 65 C 65 78, 20 86, 20 98 C 20 110, 62 118, 62 130 C 62 142, 22 150, 22 158"
+          fill="none" stroke="rgba(245,166,35,0.28)" stroke-width="0.4" stroke-dasharray="1 2.4" />
+      </svg>
+
+      <div class="s0" id="s0">
+        <div class="s0-logo-wrap">
+          <div class="s0-logo-halo"></div>
+          <img src="/branding/wewow-logo.png" alt="WeWow" />
+        </div>
+        <div class="s0-hint">Toca para comenzar</div>
+      </div>
+
+      <div class="s1" id="s1">
+        <div class="s1-header">
+          <h1 class="s1-title">BIENVENIDOS</h1>
+          <p class="s1-subtitle">Conoce a las unidades de negocio que forman parte de nuestra organización.</p>
+        </div>
+        <div class="wave">
+          <div class="unit primary" id="u1"><span class="unit-dot"></span><span class="unit-name">WeWow At Work!</span></div>
+          <div class="unit" id="u2"><span class="unit-dot"></span><span class="unit-name">Unidad 02</span></div>
+          <div class="unit" id="u3"><span class="unit-dot"></span><span class="unit-name">Unidad 03</span></div>
+          <div class="unit" id="u4"><span class="unit-dot"></span><span class="unit-name">Unidad 04</span></div>
+          <div class="unit" id="u5"><span class="unit-dot"></span><span class="unit-name">Unidad 05</span></div>
+          <div class="unit" id="u6"><span class="unit-dot"></span><span class="unit-name">Unidad 06</span></div>
+          <div class="unit" id="u7"><span class="unit-dot"></span><span class="unit-name">Unidad 07</span></div>
+        </div>
+        <div class="back-hint">Toca una unidad para explorar</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const screen = document.getElementById('screen');
+  const s0 = document.getElementById('s0');
+  const s1 = document.getElementById('s1');
+  const glow = document.getElementById('glow');
+  const wave = document.getElementById('s1wave');
+
+  s0.addEventListener('click', () => {
+    s0.style.opacity = '0';
+    s0.style.filter = 'blur(6px)';
+    s0.style.pointerEvents = 'none';
+    s1.classList.add('active');
+    wave.style.display = 'block';
+  });
+
+  screen.addEventListener('mousemove', (e) => {
+    const r = screen.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    glow.style.transform = `translate(${x * -16}px, ${y * -16}px)`;
+    document.querySelectorAll('.unit').forEach((el, i) => {
+      const depth = (i % 3) + 1;
+      el.style.marginLeft = `${x * depth * 4}px`;
+      el.style.marginTop = `${y * depth * 4}px`;
+    });
+  });
+
+  document.querySelectorAll('.unit').forEach((el) => {
+    el.addEventListener('pointerdown', () => {
+      el.classList.add('pressed', 'selected-preview');
+      document.querySelectorAll('.unit').forEach((other) => {
+        if (other !== el) other.style.opacity = '0.35';
+      });
+    });
+    el.addEventListener('pointerup', () => {
+      setTimeout(() => {
+        el.classList.remove('pressed', 'selected-preview');
+        document.querySelectorAll('.unit').forEach((other) => { other.style.opacity = ''; });
+      }, 260);
+    });
+  });
+
+  screen.addEventListener('dblclick', () => {
+    s1.classList.remove('active');
+    wave.style.display = 'none';
+    s0.style.opacity = '1';
+    s0.style.filter = 'none';
+    s0.style.pointerEvents = 'auto';
+  });
+</script>
+</body>
+</html>

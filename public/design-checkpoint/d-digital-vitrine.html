@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WeWow Holobox — D: Digital Vitrine</title>
+<style>
+  :root {
+    --accent: #f7b733;
+    --accent-strong: #ffcf6b;
+    --white: #f7f6f2;
+    --dim: rgba(247,246,242,0.55);
+    --line: rgba(255,255,255,0.16);
+    --amber-line: rgba(247,183,51,0.35);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #000; color: var(--white);
+    font-family: -apple-system, "SF Pro Display", "Segoe UI", Roboto, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  body { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+  .review-label { position: fixed; top: 18px; left: 18px; font-size: 12px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: rgba(255,255,255,0.4); z-index: 50; }
+  .review-label b { color: var(--accent); }
+  .review-nav { position: fixed; top: 18px; right: 18px; z-index: 50; display:flex; gap:8px; }
+  .review-nav button { background: rgba(255,255,255,0.06); border: 1px solid var(--line); color: var(--dim);
+    font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+  .review-nav button.active { color: var(--accent); border-color: var(--amber-line); }
+
+  .holobox-frame {
+    position: relative;
+    width: min(46vh, 92vw);
+    aspect-ratio: 9 / 16;
+    max-height: 94vh;
+    border-radius: 26px;
+    padding: 2px;
+    background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01) 60%);
+  }
+  .holobox-screen {
+    position: relative; width: 100%; height: 100%; border-radius: 24px; overflow: hidden;
+    background: #000; isolation: isolate;
+  }
+
+  /* subtle vitrine architecture: corner brackets + ground glow, implying a physical lit box */
+  .corner { position: absolute; width: 22px; height: 22px; opacity: 0.4; }
+  .corner::before, .corner::after { content: ""; position: absolute; background: var(--line); }
+  .corner::before { width: 100%; height: 1px; top: 0; }
+  .corner::after { width: 1px; height: 100%; left: 0; }
+  .c-tl { top: 14px; left: 14px; }
+  .c-tr { top: 14px; right: 14px; transform: scaleX(-1); }
+  .c-bl { bottom: 14px; left: 14px; transform: scaleY(-1); }
+  .c-br { bottom: 14px; right: 14px; transform: scale(-1,-1); }
+
+  .ground-glow { position: absolute; bottom: 0; left: 10%; right: 10%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--amber-line), transparent); opacity: 0.6; }
+  .ground-glow::before { content:""; position:absolute; inset: -40px 0 0; background: radial-gradient(closest-side, rgba(247,183,51,0.08), transparent 70%); }
+
+  .particles { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .particle { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: var(--accent);
+    opacity: 0.5; box-shadow: 0 0 6px rgba(247,183,51,0.6); animation: particle-float 9s ease-in-out infinite; }
+  @keyframes particle-float { 0%,100% { transform: translateY(0); opacity: .3; } 50% { transform: translateY(-14px); opacity: .8; } }
+
+  .screen-layer { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .8s ease; z-index: 3; }
+  .screen-layer.active { opacity: 1; pointer-events: auto; }
+
+  /* ---------- S0 ---------- */
+  #s0 { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; cursor: pointer; }
+  .s0-logo-wrap { position: relative; width: 52%; display: flex; align-items: center; justify-content: center; }
+  .s0-logo-halo { position: absolute; width: 260%; height: 260%; background: radial-gradient(closest-side, rgba(247,183,51,0.14), transparent 65%);
+    filter: blur(4px); animation: breathe 6s ease-in-out infinite; }
+  .s0-logo-wrap img { position: relative; width: 100%; filter: drop-shadow(0 0 36px rgba(247,183,51,0.18)); animation: float-slow 8s ease-in-out infinite; }
+  .s0-hint { font-size: 11px; letter-spacing: .32em; text-transform: uppercase; color: var(--dim); animation: hint-pulse 3.2s ease-in-out infinite; }
+  @keyframes breathe { 0%,100% { opacity:.55; transform:scale(.94); } 50% { opacity:1; transform:scale(1.05); } }
+  @keyframes float-slow { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes hint-pulse { 0%,100% { opacity:.25; } 50% { opacity:.75; } }
+
+  /* ---------- S1 : information field, no cards ---------- */
+  #s1-header { position: absolute; top: 8%; left: 0; right: 0; text-align: center; padding: 0 10%; z-index: 4; }
+  .s1-title { font-size: clamp(19px, 4.2vh, 28px); font-weight: 600; letter-spacing: .24em; margin: 0 0 9px; }
+  .s1-subtitle { font-size: clamp(10.5px, 1.6vh, 12.5px); line-height: 1.5; color: var(--dim); max-width: 280px; margin: 0 auto; }
+
+  .info-field { position: absolute; inset: 0; z-index: 3; }
+  .info-unit { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    cursor: pointer; user-select: none; transition: transform .2s ease, opacity .3s ease; animation: unit-drift 8s ease-in-out infinite; }
+  .info-unit .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px rgba(247,183,51,0.7); }
+  .info-unit .stem { width: 1px; height: 10px; background: linear-gradient(180deg, var(--amber-line), transparent); }
+  .info-unit .label { font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); white-space: nowrap; }
+
+  .info-unit.z-near { transform: scale(1.15); }
+  .info-unit.z-near .label { color: var(--white); }
+  .info-unit.z-mid { transform: scale(0.95); opacity: 0.8; }
+  .info-unit.z-far { transform: scale(0.75); opacity: 0.55; filter: blur(0.3px); }
+
+  .info-unit.primary .dot { width: 7px; height: 7px; box-shadow: 0 0 16px rgba(247,183,51,0.9); }
+  .info-unit.primary .label { color: var(--accent-strong); font-size: 12px; font-weight: 700; }
+  .info-unit.primary .stem { height: 14px; }
+
+  .info-unit:active, .info-unit.pressed { transform: scale(1.25) !important; opacity: 1 !important; }
+  .info-unit.pressed .dot { box-shadow: 0 0 26px rgba(247,183,51,1); }
+  .info-unit.dispersing { transition: transform .7s ease, opacity .7s ease; opacity: 0 !important; }
+
+  @keyframes unit-drift { 0%,100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+
+  #u1 { top: 44%; left: 46%; animation-delay: 0s; }
+  #u2 { top: 20%; left: 16%; animation-delay: .5s; }
+  #u3 { top: 26%; left: 70%; animation-delay: 1s; }
+  #u4 { top: 40%; left: 10%; animation-delay: 1.5s; }
+  #u5 { top: 60%; left: 72%; animation-delay: 2s; }
+  #u6 { top: 70%; left: 18%; animation-delay: 2.5s; }
+  #u7 { top: 80%; left: 60%; animation-delay: 3s; }
+
+  .s1-hint { position: absolute; bottom: 4%; left: 0; right: 0; text-align: center; font-size: 9px;
+    letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,0.25); z-index: 4; }
+
+  /* ---------- S2 mockup: person composition ---------- */
+  #s2-top { position: absolute; top: 10%; left: 0; right: 0; text-align: center; z-index: 4; }
+  #s2-top .wewow { font-size: 11px; letter-spacing: .38em; color: var(--dim); }
+
+  .s2-info-left, .s2-info-right {
+    position: absolute; top: 30%; z-index: 4; display: flex; flex-direction: column; gap: 22px; max-width: 26%;
+  }
+  .s2-info-left { left: 6%; align-items: flex-start; }
+  .s2-info-right { right: 6%; align-items: flex-end; text-align: right; }
+  .s2-data-point { display: flex; flex-direction: column; gap: 3px; }
+  .s2-info-left .s2-data-point { align-items: flex-start; }
+  .s2-info-right .s2-data-point { align-items: flex-end; }
+  .s2-data-point .k { font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; color: rgba(247,183,51,0.75); }
+  .s2-data-point .v { font-size: 11.5px; font-weight: 600; color: var(--white); }
+  .s2-data-point .rule { width: 26px; height: 1px; background: var(--amber-line); }
+
+  .s2-silhouette-wrap { position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%);
+    width: 46%; display: flex; align-items: flex-end; justify-content: center; z-index: 2; }
+  .s2-silhouette-wrap svg { width: 100%; height: auto; filter: drop-shadow(0 0 40px rgba(247,183,51,0.12)); }
+
+  .s2-bottom-ui { position: absolute; bottom: 5%; left: 0; right: 0; text-align: center; z-index: 4; }
+  .s2-bottom-ui .name { font-size: 15px; font-weight: 700; letter-spacing: .1em; }
+  .s2-bottom-ui .role { font-size: 10px; color: var(--dim); letter-spacing: .06em; margin-top: 2px; }
+  .s2-bottom-ui .bar { width: 36px; height: 1px; background: var(--amber-line); margin: 10px auto; }
+
+  .back-btn { position: absolute; top: 4%; left: 6%; z-index: 5; font-size: 9.5px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--dim); cursor: pointer; padding: 6px 4px; }
+  .back-btn:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="review-label">Variación <b>D</b> — WeWow Digital Vitrine</div>
+  <div class="review-nav">
+    <button data-go="s0" id="nav-s0" class="active">S0</button>
+    <button data-go="s1" id="nav-s1">S1</button>
+    <button data-go="s2" id="nav-s2">S2 mockup</button>
+  </div>
+
+  <div class="holobox-frame">
+    <div class="holobox-screen" id="screen">
+      <div class="corner c-tl"></div><div class="corner c-tr"></div>
+      <div class="corner c-bl"></div><div class="corner c-br"></div>
+      <div class="ground-glow"></div>
+      <div class="particles" id="particles"></div>
+
+      <div class="screen-layer active" id="s0">
+        <div class="s0-logo-wrap">
+          <div class="s0-logo-halo"></div>
+          <img src="/branding/wewow-logo.png" alt="WeWow" />
+        </div>
+        <div class="s0-hint">Toca para comenzar</div>
+      </div>
+
+      <div class="screen-layer" id="s1">
+        <div id="s1-header">
+          <h1 class="s1-title">BIENVENIDOS</h1>
+          <p class="s1-subtitle">Conoce a las unidades de negocio que forman parte de nuestra organización.</p>
+        </div>
+        <div class="info-field">
+          <div class="info-unit primary z-near" id="u1"><span class="dot"></span><span class="stem"></span><span class="label">WeWow At Work!</span></div>
+          <div class="info-unit z-mid" id="u2"><span class="dot"></span><span class="stem"></span><span class="label">Unidad 02</span></div>
+          <div class="info-unit z-far" id="u3"><span class="dot"></span><span class="stem"></span><span class="label">Unidad 03</span></div>
+          <div class="info-unit z-near" id="u4"><span class="dot"></span><span class="stem"></span><span class="label">Unidad 04</span></div>
+          <div class="info-unit z-mid" id="u5"><span class="dot"></span><span class="stem"></span><span class="label">Unidad 05</span></div>
+          <div class="info-unit z-far" id="u6"><span class="dot"></span><span class="stem"></span><span class="label">Unidad 06</span></div>
+          <div class="info-unit z-mid" id="u7"><span class="dot"></span><span class="stem"></span><span class="label">Unidad 07</span></div>
+        </div>
+        <div class="s1-hint">Toca una unidad para explorar</div>
+      </div>
+
+      <div class="screen-layer" id="s2">
+        <div class="back-btn" id="back-btn">← Menú principal</div>
+        <div id="s2-top"><span class="wewow">WEWOW</span></div>
+        <div class="s2-info-left">
+          <div class="s2-data-point"><span class="k">Unidad</span><span class="v">At Work!</span><span class="rule"></span></div>
+          <div class="s2-data-point"><span class="k">Head</span><span class="v">Carlos Landa</span><span class="rule"></span></div>
+        </div>
+        <div class="s2-info-right">
+          <div class="s2-data-point"><span class="k">Rol</span><span class="v">Head WeWow At Work!</span><span class="rule"></span></div>
+          <div class="s2-data-point"><span class="k">Estado</span><span class="v">En vivo</span><span class="rule"></span></div>
+        </div>
+        <div class="s2-silhouette-wrap">
+          <svg viewBox="0 0 200 420" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sil-grad-d" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#f7b733" stop-opacity="0.35"/>
+              </linearGradient>
+            </defs>
+            <ellipse cx="100" cy="52" rx="34" ry="40" fill="url(#sil-grad-d)"/>
+            <path d="M100 92 C60 100 45 130 42 175 L38 300 C37 330 40 360 46 410 L80 410 L84 260 L92 260 L96 410 L128 410 C132 360 136 330 133 300 L129 175 C126 130 111 100 100 92 Z" fill="url(#sil-grad-d)"/>
+          </svg>
+        </div>
+        <div class="s2-bottom-ui">
+          <div class="bar"></div>
+          <div class="name">CARLOS LANDA</div>
+          <div class="role">HEAD WEWOW AT WORK!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const screen = document.getElementById('screen');
+  const layers = { s0: document.getElementById('s0'), s1: document.getElementById('s1'), s2: document.getElementById('s2') };
+  const navBtns = { s0: document.getElementById('nav-s0'), s1: document.getElementById('nav-s1'), s2: document.getElementById('nav-s2') };
+
+  function goTo(name) {
+    Object.entries(layers).forEach(([k, el]) => el.classList.toggle('active', k === name));
+    Object.entries(navBtns).forEach(([k, el]) => el.classList.toggle('active', k === name));
+  }
+  Object.entries(navBtns).forEach(([k, btn]) => btn.addEventListener('click', () => goTo(k)));
+
+  layers.s0.addEventListener('click', () => goTo('s1'));
+  document.getElementById('back-btn').addEventListener('click', () => goTo('s1'));
+
+  document.querySelectorAll('.info-unit').forEach((el) => {
+    el.addEventListener('pointerdown', () => {
+      el.classList.add('pressed');
+      document.querySelectorAll('.info-unit').forEach((o) => { if (o !== el) o.style.opacity = '0.25'; });
+    });
+    el.addEventListener('pointerup', () => {
+      const isPrimary = el.classList.contains('primary');
+      setTimeout(() => {
+        if (isPrimary) {
+          document.querySelectorAll('.info-unit').forEach((o) => { if (o !== el) o.classList.add('dispersing'); });
+          setTimeout(() => goTo('s2'), 500);
+        } else {
+          el.classList.remove('pressed');
+          document.querySelectorAll('.info-unit').forEach((o) => { o.style.opacity = ''; });
+        }
+      }, 220);
+    });
+  });
+
+  document.getElementById('back-btn').addEventListener('click', () => {
+    document.querySelectorAll('.info-unit').forEach((o) => { o.classList.remove('dispersing', 'pressed'); o.style.opacity = ''; });
+  });
+
+  // ambient parallax
+  screen.addEventListener('mousemove', (e) => {
+    const r = screen.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    document.querySelectorAll('.info-unit').forEach((el) => {
+      const depth = el.classList.contains('z-near') ? 3 : el.classList.contains('z-mid') ? 1.8 : 1;
+      el.style.marginLeft = `${x * depth * 5}px`;
+      el.style.marginTop = `${y * depth * 5}px`;
+    });
+  });
+
+  // scatter particles
+  const pWrap = document.getElementById('particles');
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.animationDelay = (Math.random() * 6) + 's';
+    pWrap.appendChild(p);
+  }
+</script>
+</body>
+</html>

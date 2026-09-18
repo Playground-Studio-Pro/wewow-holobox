@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WeWow Holobox — A: Spatial Glass</title>
+<style>
+  :root {
+    --bg: #050507;
+    --accent: #f5a623;
+    --accent-soft: rgba(245, 166, 35, 0.35);
+    --text: #f6f5f2;
+    --text-dim: rgba(246, 245, 242, 0.55);
+    --glass-fill: rgba(255, 255, 255, 0.045);
+    --glass-fill-strong: rgba(255, 255, 255, 0.075);
+    --glass-border: rgba(255, 255, 255, 0.14);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #000;
+    font-family: -apple-system, "SF Pro Display", "Segoe UI", Roboto, system-ui, sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .review-label {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    z-index: 50;
+  }
+
+  .review-label b { color: var(--accent); }
+
+  .holobox-frame {
+    position: relative;
+    width: min(46vh, 92vw);
+    height: min(92vh, 92vw * 16 / 9 * 0.5625 + 900px);
+    aspect-ratio: 9 / 16;
+    max-height: 94vh;
+    border-radius: 28px;
+    padding: 10px;
+    background: linear-gradient(160deg, #131316, #08080a 60%);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 40px 120px rgba(0,0,0,0.7),
+      inset 0 0 40px rgba(0,0,0,0.6);
+  }
+
+  .holobox-screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--bg);
+    isolation: isolate;
+  }
+
+  .ambient-glow {
+    position: absolute;
+    inset: -20%;
+    background:
+      radial-gradient(closest-side, rgba(245,166,35,0.055), transparent 70%) 50% 30% / 70% 50% no-repeat,
+      radial-gradient(closest-side, rgba(255,255,255,0.03), transparent 70%) 70% 80% / 60% 45% no-repeat;
+    pointer-events: none;
+    transition: transform 0.4s ease-out;
+  }
+
+  /* ---------- S0 : IDLE ---------- */
+  .s0 {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    cursor: pointer;
+    transition: opacity 0.6s ease, filter 0.6s ease;
+  }
+
+  .s0-logo-wrap {
+    position: relative;
+    width: 58%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .s0-logo-halo {
+    position: absolute;
+    width: 220%;
+    height: 220%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(245,166,35,0.18), transparent 65%);
+    filter: blur(6px);
+    animation: breathe 6s ease-in-out infinite;
+  }
+
+  .s0-logo-wrap img {
+    position: relative;
+    width: 100%;
+    filter: drop-shadow(0 0 40px rgba(245,166,35,0.15));
+    animation: float-slow 8s ease-in-out infinite;
+  }
+
+  .s0-hint {
+    font-size: 11px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    animation: hint-pulse 3.2s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.6; transform: scale(0.94); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes hint-pulse {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 0.75; }
+  }
+
+  /* ---------- S1 : MENU ---------- */
+  .s1 {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.7s ease;
+  }
+  .s1.active { opacity: 1; pointer-events: auto; }
+
+  .s1-header {
+    position: absolute;
+    top: 7%;
+    left: 0;
+    right: 0;
+    text-align: center;
+    padding: 0 8%;
+  }
+
+  .s1-title {
+    font-size: clamp(20px, 4.4vh, 30px);
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    margin: 0 0 10px;
+  }
+
+  .s1-subtitle {
+    font-size: clamp(11px, 1.7vh, 13px);
+    line-height: 1.5;
+    color: var(--text-dim);
+    max-width: 320px;
+    margin: 0 auto;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+
+  .constellation {
+    position: absolute;
+    inset: 0;
+  }
+
+  .unit {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 14px 10px;
+    background: var(--glass-fill);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    transform-origin: center;
+    animation: drift 7s ease-in-out infinite;
+    transition: transform 0.18s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .unit::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 10%;
+    width: 40%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  }
+
+  .unit .unit-name {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .unit .unit-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.55;
+    margin-bottom: 8px;
+    box-shadow: 0 0 8px var(--accent-soft);
+  }
+
+  .unit.primary {
+    background: var(--glass-fill-strong);
+    border-color: rgba(245,166,35,0.35);
+  }
+  .unit.primary .unit-name { font-size: 13px; }
+  .unit.primary .unit-dot { opacity: 1; }
+
+  .unit:active,
+  .unit.pressed {
+    transform: scale(0.92) !important;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-soft), 0 0 30px rgba(245,166,35,0.35), 0 12px 30px rgba(0,0,0,0.4);
+  }
+
+  .unit.selected-preview .unit-name { color: var(--accent); }
+
+  @keyframes drift {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -7px; }
+  }
+
+  /* positions — loose scattered orbit, not a grid */
+  #u1 { width: 34%; height: 15%; top: 44%; left: 33%; rotate: -3deg; animation-delay: 0s; }
+  #u2 { width: 24%; height: 11%; top: 24%; left: 10%; rotate: -7deg; animation-delay: 0.6s; }
+  #u3 { width: 22%; height: 10.5%; top: 28%; left: 62%; rotate: 5deg; animation-delay: 1.3s; }
+  #u4 { width: 23%; height: 11%; top: 39%; left: 6%; rotate: 4deg; animation-delay: 2s; }
+  #u5 { width: 23%; height: 11%; top: 57%; left: 68%; rotate: -4deg; animation-delay: 2.6s; }
+  #u6 { width: 23%; height: 11%; top: 73%; left: 12%; rotate: 3deg; animation-delay: 3.2s; }
+  #u7 { width: 23%; height: 11%; top: 79%; left: 60%; rotate: -5deg; animation-delay: 3.8s; }
+
+  .back-hint {
+    position: absolute;
+    bottom: 4%;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+  }
+</style>
+</head>
+<body>
+  <div class="review-label">Variación <b>A</b> — Spatial Glass · S0/S1 exploration</div>
+
+  <div class="holobox-frame">
+    <div class="holobox-screen" id="screen">
+      <div class="ambient-glow" id="glow"></div>
+
+      <div class="s0" id="s0">
+        <div class="s0-logo-wrap">
+          <div class="s0-logo-halo"></div>
+          <img src="/branding/wewow-logo.png" alt="WeWow" />
+        </div>
+        <div class="s0-hint">Toca para comenzar</div>
+      </div>
+
+      <div class="s1" id="s1">
+        <div class="s1-header">
+          <h1 class="s1-title">BIENVENIDOS</h1>
+          <p class="s1-subtitle">Conoce a las unidades de negocio que forman parte de nuestra organización.</p>
+        </div>
+        <div class="constellation">
+          <div class="unit primary" id="u1"><span class="unit-dot"></span><span class="unit-name">WeWow At Work!</span></div>
+          <div class="unit" id="u2"><span class="unit-dot"></span><span class="unit-name">Unidad 02</span></div>
+          <div class="unit" id="u3"><span class="unit-dot"></span><span class="unit-name">Unidad 03</span></div>
+          <div class="unit" id="u4"><span class="unit-dot"></span><span class="unit-name">Unidad 04</span></div>
+          <div class="unit" id="u5"><span class="unit-dot"></span><span class="unit-name">Unidad 05</span></div>
+          <div class="unit" id="u6"><span class="unit-dot"></span><span class="unit-name">Unidad 06</span></div>
+          <div class="unit" id="u7"><span class="unit-dot"></span><span class="unit-name">Unidad 07</span></div>
+        </div>
+        <div class="back-hint">Toca una unidad para explorar</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const screen = document.getElementById('screen');
+  const s0 = document.getElementById('s0');
+  const s1 = document.getElementById('s1');
+  const glow = document.getElementById('glow');
+
+  s0.addEventListener('click', () => {
+    s0.style.opacity = '0';
+    s0.style.filter = 'blur(6px)';
+    s0.style.pointerEvents = 'none';
+    s1.classList.add('active');
+  });
+
+  // simple depth parallax to suggest suspension inside the box
+  screen.addEventListener('mousemove', (e) => {
+    const r = screen.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    glow.style.transform = `translate(${x * -18}px, ${y * -18}px)`;
+    document.querySelectorAll('.unit').forEach((el, i) => {
+      const depth = (i % 3) + 1;
+      el.style.marginLeft = `${x * depth * 4}px`;
+      el.style.marginTop = `${y * depth * 4}px`;
+    });
+  });
+
+  // touch-compression + selected-state energy preview (no navigation — S2 out of scope)
+  document.querySelectorAll('.unit').forEach((el) => {
+    el.addEventListener('pointerdown', () => {
+      el.classList.add('pressed');
+      document.querySelectorAll('.unit').forEach((other) => {
+        if (other !== el) other.style.opacity = '0.35';
+      });
+      el.classList.add('selected-preview');
+    });
+    el.addEventListener('pointerup', () => {
+      setTimeout(() => {
+        el.classList.remove('pressed', 'selected-preview');
+        document.querySelectorAll('.unit').forEach((other) => { other.style.opacity = ''; });
+      }, 260);
+    });
+  });
+
+  // double-click screen to reset back to S0 for review convenience
+  screen.addEventListener('dblclick', () => {
+    s1.classList.remove('active');
+    s0.style.opacity = '1';
+    s0.style.filter = 'none';
+    s0.style.pointerEvents = 'auto';
+  });
+</script>
+</body>
+</html>
